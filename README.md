@@ -18,6 +18,7 @@
 Пример использования
 ------------------------------
 ```
+Tween.get(obj).to({x:500, y:0}, 1000, Ease.elasticInOut).to({visible:false});
 ```
 
 Подключение в Haxe
