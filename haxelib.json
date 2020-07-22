@@ -1,0 +1,11 @@
+{
+	"name": "tween",
+	"url": "https://github.com/VolkovRA/HaxeTween/blob/master/README.md",
+	"license": "MIT",
+	"tags": ["tween", "ease", "js"],
+	"description": "The Haxe tweens library to JS",
+	"version": "1.0.0",
+	"releasenote": "Stable",
+	"contributors": ["VolkovRA"],
+	"classPath": "lib"
+}
