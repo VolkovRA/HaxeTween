@@ -620,6 +620,27 @@ class Tween
     }
 
     /**
+     * Проверить наличие активных твинов на указанном объекте.
+     * - Возвращает `true`, если объект имеет хотя бы один активный твин в данный момент.
+     * - Возвращает `false`, если передан `null` или объект не имеет твинов.
+     * @param target Проверяемый объект.
+     * @return Наличие твинов у объекта.
+     */
+    static public function has(target:Dynamic):Bool {
+        var arr:Array<Tween> = all[target];
+        if (arr == null)
+            return false;
+
+        var len = arr.length;
+        while (len-- != 0) {
+            if (arr[len] == null || arr[len].stopped)
+                continue;
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Остановить все активные твины на указанном объекте.
      * 
      * Вызов этого метода эквивалентен вызову `pause()` для каждого
