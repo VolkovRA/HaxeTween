@@ -684,26 +684,37 @@ class Tween
             var j = 0;
             while (i < arr.length) {
                 var tween = arr[i++];
-                if (tween == null || tween.stopped) // <-- Пустая ячейка, не актуальный твин
+
+                // Пустая ячейка или не актуальный твин:
+                if (tween == null || tween.stopped)
                     continue;
-                if (Utils.eq(tween.si, steps)) { // <-- Новый твин, не должен обновляться в этом цикле
-                    j ++;
+
+                // Пропуск новых твинов, добавленных в этом цикле обновления: (Обновятся на следующем)
+                if (Utils.eq(tween.si, steps)) {
+                    if (Utils.eq(tween.si, j)) {
+                        j ++;
+                    }
+                    else {
+                        tween.si = j;
+                        arr[j++] = tween;
+                    }
                     continue;
                 }
 
+                // Твиним:
                 tween.update(time);
-                if (tween.stopped) // <-- Твин завершился и удалился из списка
+                if (tween.stopped)
                     continue;
-                
-                // Актуальный твин:
-                finish = false;
-                if (Utils.eq(tween.si, j)) { // <-- Сдвиг не требуется
-                    j ++;
-                    continue;
-                }
 
-                tween.si = j;
-                arr[j++] = tween;
+                // Твин ещё не закончился:
+                finish = false;
+                if (Utils.eq(tween.si, j)) {
+                    j ++;
+                }
+                else {
+                    tween.si = j;
+                    arr[j++] = tween;
+                }
             }
             if (Utils.eq(j, 0))
                 Utils.delete(all[target]);
