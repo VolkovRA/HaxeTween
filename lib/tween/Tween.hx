@@ -10,7 +10,7 @@ import tween.Ease;
  * Твинер.
  * 
  * Для общего понимания твинер можно представить себе как небольшой плеер микропрограммы,
- * которую вы емую задаёте. Во время воспроизведения твинер идёт шаг за шагом и поочереди
+ * которую вы ему задаёте. Во время воспроизведения твинер идёт шаг за шагом и поочереди
  * исполняет заданные ему действия.
  * 
  * Использование:
@@ -54,6 +54,9 @@ class Tween
 
         this.target = target;
         this.opt = options;
+
+        if (target.tweenTargetID == null)
+            target.tweenTargetID = ++targetID;
 
         if (options == null) {
             addTween(this);
@@ -529,17 +532,18 @@ class Tween
     //   СТАТИКА   //
     /////////////////
 
-    static private var all:Dynamic = {}; // Target->[Tween, Tween, null, Tween, ...]
+    static private var all:Dynamic = {}; // targetID->[Tween, Tween, null, Tween, ...]
+    static private var targetID:Int = 0;
     static private var stamp:Float = 0;
     static private var intervalID:Int = -1;
     static private var steps:Int = 0;
 
     static private function addTween(tween:Tween):Void {
-        var arr:Array<Tween> = all[tween.target];
+        var arr:Array<Tween> = all[tween.target.tweenTargetID];
         if (arr == null) {
             arr = [tween];
             tween.si = 0;
-            all[tween.target] = arr;
+            all[tween.target.tweenTargetID] = arr;
         }
         else {
             tween.si = arr.length;
@@ -549,7 +553,7 @@ class Tween
         // Есть вероятность, что при добавлении этого твина уже
         // выполняется обновление прямо сейчас. С помощью этого
         // мы гарантируем обновление твина в следующем вызове step().
-        tween.si = steps;
+        tween.stp = steps;
 
         if (Utils.eq(intervalID, -1) && interval > 0) {
             stamp = Utils.stamp();
@@ -558,7 +562,7 @@ class Tween
     }
 
     static private function removeTween(tween:Tween):Void {
-        all[tween.target][tween.si] = null;
+        all[tween.target.tweenTargetID][tween.si] = null;
         tween.si = -1;
     }
 
@@ -627,7 +631,10 @@ class Tween
      * @return Наличие твинов у объекта.
      */
     static public function has(target:Dynamic):Bool {
-        var arr:Array<Tween> = all[target];
+        if (target == null)
+            return false;
+
+        var arr:Array<Tween> = all[target.tweenTargetID];
         if (arr == null)
             return false;
 
@@ -650,7 +657,10 @@ class Tween
      * @param target Анимированный объект.
      */
     static public function stop(target:Dynamic):Void {
-        var arr:Array<Tween> = all[target];
+        if (target == null)
+            return;
+
+        var arr:Array<Tween> = all[target.tweenTargetID];
         if (arr == null)
             return;
 
@@ -661,7 +671,7 @@ class Tween
 
             arr[len].si = -1;
         }
-        Utils.delete(all[target]);
+        Utils.delete(all[target.tweenTargetID]);
     }
 
     /**
@@ -697,10 +707,10 @@ class Tween
     static public function step(time:Float):Bool {
         steps ++;
 
-        var target:Dynamic = null;
+        var targetID:Dynamic = null;
         var finish:Bool = true;
-        Syntax.code('for ({0} in {1}) {', target, all); // for in
-            var arr:Array<Tween> = all[target];
+        Syntax.code('for ({0} in {1}) {', targetID, all); // for in
+            var arr:Array<Tween> = all[targetID];
             var i = 0;
             var j = 0;
             while (i < arr.length) {
@@ -711,7 +721,7 @@ class Tween
                     continue;
 
                 // Пропуск новых твинов, добавленных в этом цикле обновления: (Обновятся на следующем)
-                if (Utils.eq(tween.si, steps)) {
+                if (Utils.eq(tween.stp, steps)) {
                     if (Utils.eq(tween.si, j)) {
                         j ++;
                     }
@@ -738,7 +748,7 @@ class Tween
                 }
             }
             if (Utils.eq(j, 0))
-                Utils.delete(all[target]);
+                Utils.delete(all[targetID]);
             else if (Utils.noeq(j, i))
                 arr.resize(j);
         Syntax.code('}'); // for end
