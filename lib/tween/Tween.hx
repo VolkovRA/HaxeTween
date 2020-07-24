@@ -55,7 +55,10 @@ class Tween
         this.target = target;
         this.opt = options;
 
-        if (options != null) {
+        if (options == null) {
+            addTween(this);
+        }
+        else {
             if (options.bounce)
                 bounce = true;
             if (options.reversed)
@@ -583,7 +586,28 @@ class Tween
      * 
      * @see setInterval: https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/setInterval
      */
-    static public var interval:Float = 16;
+    static public var interval(default, set):Float = 16;
+    static function set_interval(value:Float):Float {
+        if (value == interval)
+            return value;
+
+        if (value > 0) {
+            if (intervalID != -1) {
+                Browser.window.clearInterval(intervalID);
+                intervalID = Browser.window.setInterval(onInterval, value);
+            }
+            interval = value;
+        }
+        else {
+            if (intervalID != -1) {
+                Browser.window.clearInterval(intervalID);
+                intervalID = -1;
+            }
+            interval = 0;
+        }
+
+        return value;
+    }
 
     /**
      * Создать новый твиннер.
