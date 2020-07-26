@@ -110,8 +110,34 @@ class Utils
      * @param v Проверяемое значение.
      * @return Возвращает `true`, если это числовой тип. (В том числе: `NaN` или `Infinity`)
      */
+    static public inline function isString(v:Dynamic):Bool {
+        return Syntax.code('(typeof {0} === "string")', v);
+    }
+
+    /**
+     * Проверка значения на числовой тип.
+     * @param v Проверяемое значение.
+     * @return Возвращает `true`, если это числовой тип. (В том числе: `NaN` или `Infinity`)
+     */
     static public inline function isNumber(v:Dynamic):Bool {
         return Syntax.code('(typeof {0} === "number")', v);
+    }
+
+    /**
+     * Распарсить значение в число.
+     * 
+     * Разбирает текстовую строку, ищет и возвращает из нее десятичное число.
+     * Если функция встретит знак, отличный от (`+` или `-`), цифр(`0-9`),
+     * разделительной точки, или показателя степени, она вернет значение,
+     * предшествующее этому знаку, игнорируя все последующие символы.
+     * Допускаются позади и впереди идущие пробелы.
+     * 
+     * @param v Значение из которого вам надо выделить десятичное число. (Приводится к `String`)
+     * @return Число с плавающей точкой, полученное из строки. Если первый символ не может быть сконвертирован в число, то возвращается `NaN`.
+     * @see parseFloat() https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseFloat
+     */
+    static public inline function parseFloat(v:Dynamic):Float {
+        return Syntax.code('(parseFloat({0}))', v);
     }
 
     /**

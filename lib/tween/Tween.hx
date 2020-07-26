@@ -418,29 +418,64 @@ class Tween
 
     private function executeAction(action:Action, progress:Float):Void {
         if (Utils.eq(action.type, ActionType.EASE)) {
-            var prop = null;
+            var prop:Dynamic = null;
             Syntax.code('for ({0} in {1}) {', prop, action.props); // for in
-                var v1 = action.cache[prop]; // Исходное значение
-                var v2 = action.props[prop]; // Целевое значение
+                var v1:Dynamic = action.cache[prop]; // Исходное значение
+                var v2:Dynamic = action.props[prop]; // Целевое значение
 
+                // Число:
                 if (Utils.isNumber(v2)) {
                     if (Utils.isUnd(v1)) {
-                        v1 = target[prop];
-                        if (Utils.isUnd(v1))
+                        v1 = Utils.parseFloat(Reflect.getProperty(target, prop)); // Запоминаем исходное значение
+                        if (!Utils.isFinite(v1))
                             v1 = 0;
                         action.cache[prop] = v1;
                     }
-                    target[prop] = v1 + action.ease(progress) * (v2 - v1);
+                    if (opt != null && opt.modifier != null)
+                        Reflect.setProperty(target, prop, opt.modifier(v1+action.ease(progress)*(v2-v1)));
+                    else
+                        Reflect.setProperty(target, prop, v1+action.ease(progress)*(v2-v1));
+                    Syntax.code('continue');
                 }
-                else {
-                    if (Utils.isUnd(v1)) {
-                        v1 = target[prop];
-                        if (Utils.isUnd(v1))
-                            v1 = null;
-                        action.cache[prop] = v1;
-                    }  
-                    target[prop] = Utils.eq(progress,1)?v2:v1;
+
+                // Попытка разбора в число:
+                if (opt != null && opt.parse) {
+                    var v2p:Dynamic = Utils.parseFloat(v2);
+                    if (Utils.isFinite(v2p)) {
+
+                        // Парсинг в число удался:
+                        if (Utils.isUnd(v1)) {
+                            v1 = Utils.parseFloat(Reflect.getProperty(target, prop)); // Запоминаем исходное значение
+                            if (!Utils.isFinite(v1))
+                                v1 = 0;
+                            action.cache[prop] = v1;
+                        }
+
+                        if (Utils.isString(v2))
+                            v2p = Utils.str(v1+action.ease(progress)*(v2p-v1));
+                        else
+                            v2p = v1+action.ease(progress)*(v2p-v1);
+
+                        if (opt.modifier != null)
+                            Reflect.setProperty(target, prop, opt.modifier(v2p));
+                        else
+                            Reflect.setProperty(target, prop, v2p);
+
+                        Syntax.code('continue');
+                    }
                 }
+                
+                // Все остальные типы данных:
+                if (Utils.isUnd(v1)) {
+                    v1 = Reflect.getProperty(target, prop);
+                    if (Utils.isUnd(v1))
+                        v1 = null;
+                    action.cache[prop] = v1;
+                }
+                if (opt != null && opt.modifier != null)
+                    Reflect.setProperty(target, prop, opt.modifier(Utils.eq(progress,1)?v2:v1));
+                else
+                    Reflect.setProperty(target, prop, Utils.eq(progress,1)?v2:v1);
             Syntax.code('}'); // for end
             return;
         }
@@ -822,6 +857,31 @@ typedef TweenOptions =
      * По умолчанию: `false` (Не удалять)
      */
     @:optional var clear:Bool;
+
+    /**
+     * Разбор не числовых значений.
+     * - Если `true`, пытается привести все **не числовые** значения к числу.
+     * - Если `false`, разбор не проивзодится.
+     * 
+     * Это свойство полезно для анимации чисел в строковом виде. По умолчанию
+     * твинер не анимирует числа в строке.
+     * 
+     * По умолчанию: `false` (Разбор значений выключен)
+     */
+    @:optional var parse:Bool;
+
+    /**
+     * Модификатор значения.
+     * 
+     * Эта функция будет вызываться каждый раз перед установкой нового значения цели.
+     * Функция принимает устанавливаемое значение и должна вернуть итоговый результат
+     * для цели. На вход получает тип данных, соответствующий заявленному при вызове `Tween.to()`.
+     * 
+     * Эта опция может быть удобна для анимации css свойств: `15px` при связке с `parse=true`.
+     * 
+     * По умолчанию: `null` (Модификатор значения не используется)
+     */
+    @:optional var modifier:Dynamic->Dynamic;
 }
 
 /**
