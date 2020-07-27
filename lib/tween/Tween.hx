@@ -426,15 +426,12 @@ class Tween
                 // Число:
                 if (Utils.isNumber(v2)) {
                     if (Utils.isUnd(v1)) {
-                        v1 = Utils.parseFloat(Reflect.getProperty(target, prop)); // Запоминаем исходное значение
+                        v1 = Utils.parseFloat(getTargetProperty(prop)); // Запоминаем исходное значение
                         if (!Utils.isFinite(v1))
                             v1 = 0;
                         action.cache[prop] = v1;
                     }
-                    if (opt != null && opt.modifier != null)
-                        Reflect.setProperty(target, prop, opt.modifier(v1+action.ease(progress)*(v2-v1)));
-                    else
-                        Reflect.setProperty(target, prop, v1+action.ease(progress)*(v2-v1));
+                    setTargetPropert(prop, v1+action.ease(progress)*(v2-v1));
                     Syntax.code('continue');
                 }
 
@@ -445,7 +442,7 @@ class Tween
 
                         // Парсинг в число удался:
                         if (Utils.isUnd(v1)) {
-                            v1 = Utils.parseFloat(Reflect.getProperty(target, prop)); // Запоминаем исходное значение
+                            v1 = Utils.parseFloat(getTargetProperty(prop)); // Запоминаем исходное значение
                             if (!Utils.isFinite(v1))
                                 v1 = 0;
                             action.cache[prop] = v1;
@@ -456,26 +453,19 @@ class Tween
                         else
                             v2p = v1+action.ease(progress)*(v2p-v1);
 
-                        if (opt.modifier != null)
-                            Reflect.setProperty(target, prop, opt.modifier(v2p));
-                        else
-                            Reflect.setProperty(target, prop, v2p);
-
+                        setTargetPropert(prop, v2p);
                         Syntax.code('continue');
                     }
                 }
-                
+
                 // Все остальные типы данных:
                 if (Utils.isUnd(v1)) {
-                    v1 = Reflect.getProperty(target, prop);
+                    v1 = getTargetProperty(prop); // Запоминаем исходное значение
                     if (Utils.isUnd(v1))
                         v1 = null;
                     action.cache[prop] = v1;
                 }
-                if (opt != null && opt.modifier != null)
-                    Reflect.setProperty(target, prop, opt.modifier(Utils.eq(progress,1)?v2:v1));
-                else
-                    Reflect.setProperty(target, prop, Utils.eq(progress,1)?v2:v1);
+                setTargetPropert(prop, Utils.eq(progress,1)?v2:v1);
             Syntax.code('}'); // for end
             return;
         }
@@ -484,6 +474,53 @@ class Tween
                 Syntax.code('{0}.apply(null, {1})', action.callback, action.args);
             return;
         }
+    }
+
+    private function getTargetProperty(prop:String):Dynamic {
+        if (prop == null)
+            return null;
+
+        if (opt != null && opt.multilevel && Utils.isString(prop)) {
+            var arr:Array<String> = prop.split(".");
+            var i = 0;
+            var t = target;
+            while (i < arr.length-1) {
+                t = Reflect.getProperty(t, arr[i++]);
+                if (t == null)
+                    return null;
+            }
+            return Reflect.getProperty(target, arr[i]);
+        }
+
+        return Reflect.getProperty(target, prop);
+    }
+
+    private function setTargetPropert(prop:String, value:Dynamic):Void {
+        if (prop == null)
+            return;
+
+        if (opt == null) {
+            Reflect.setProperty(target, prop, value);
+            return;
+        }
+
+        var t = target;
+        if (opt.multilevel && Utils.isString(prop)) {
+            var arr:Array<String> = prop.split(".");
+            var i = 0;
+            while (i < arr.length-1) {
+                prop = arr[i++];
+                t = Reflect.getProperty(t, prop);
+                if (t == null)
+                    return;
+            }
+            prop = arr[i];
+        }
+
+        if (opt.modifier == null)
+            Reflect.setProperty(t, prop, value);
+        else
+            Reflect.setProperty(t, prop, opt.modifier(value));
     }
 
     private function addAction(action:Action):Tween {
@@ -882,6 +919,18 @@ typedef TweenOptions =
      * По умолчанию: `null` (Модификатор значения не используется)
      */
     @:optional var modifier:Dynamic->Dynamic;
+
+    /**
+     * Многоуровневая вложенность.
+     * 
+     * Позволяет анимировать вложенные объекты, например, такие как: `Sprite.scale.x`.
+     * В обычном режиме вы не можете анимировать значение `x`, если целью является `Sprite`.
+     * Используя эту опцию `multilevel=true`, твинер будет пытаться прочитать и установить
+     * значение по указанному пути вложенности.
+     * 
+     * По умолчанию: `false` (Использовать ключи "как есть")
+     */
+    @:optional var multilevel:Bool;
 }
 
 /**
