@@ -489,7 +489,7 @@ class Tween
                 if (t == null)
                     return null;
             }
-            return Reflect.getProperty(target, arr[i]);
+            return Reflect.getProperty(t, arr[i]);
         }
 
         return Reflect.getProperty(target, prop);
