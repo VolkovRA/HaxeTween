@@ -1,3 +1,4 @@
+-lib tools
 --class-path lib 
 --class-path src 
 -main Main

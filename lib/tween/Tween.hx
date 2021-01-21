@@ -4,6 +4,7 @@ import haxe.Constraints.Function;
 import js.Browser;
 import js.Syntax;
 import js.lib.Error;
+import tools.NativeJS;
 import tween.Ease;
 
 /**
@@ -141,7 +142,7 @@ class Tween
      */
     public var stopped(get, never):Bool;
     inline function get_stopped():Bool {
-        return Utils.eq(si, -1);
+        return NativeJS.eq(si, -1);
     }
 
     /**
@@ -171,9 +172,9 @@ class Tween
     public var position(get, set):Float;
     function get_position():Float {
         var len = a.length;
-        if (Utils.eq(len, 0))
+        if (NativeJS.eq(len, 0))
             return ap; // <-- В пустом списке может быть только 0 или 1.
-        if (Utils.eq(duration, 0))
+        if (NativeJS.eq(duration, 0))
             return (ai+(ap==0?0:1))/len; // <-- С нулевой длительностью ap может быть только 0 или 1.
 
         return (a[ai].prev+ap)/duration; // <-- Тут задача с временем, ap измеряется в миллисекундах прогресса.
@@ -189,7 +190,7 @@ class Tween
         if (len == 0) {
             ap = value<0.5?0:1;
         }
-        else if (Utils.eq(duration, 0)) {
+        else if (NativeJS.eq(duration, 0)) {
             ai = untyped Math.min(len-1, Math.floor(v*len));
             ap = (v*len)-ai<0.5?0:1;
         }
@@ -284,7 +285,7 @@ class Tween
             reversed = false;
             update(opt.position * duration);
             reversed = rev;
-            if (stopped || Utils.noeq(age+1,upd))
+            if (stopped || NativeJS.neq(age+1,upd))
                 return;
             age = upd;
         }
@@ -295,12 +296,12 @@ class Tween
             time = time * speed;
 
         // Время не передано: (Если нет времени - ничего не может произойти, даже мгновение)
-        if (Utils.isNaN(time) || Utils.eq(time, 0))
+        if (NativeJS.isNaN(time) || NativeJS.eq(time, 0))
             return;
 
         // Пустой твин: (Забыли заполнить?)
         var len = a.length;
-        if (Utils.eq(len, 0)) {
+        if (NativeJS.eq(len, 0)) {
             if (bounce)
                 reversed = !reversed;
 
@@ -311,7 +312,7 @@ class Tween
             
             if (loop > 0)
                 loop--;
-            else if (Utils.eq(loop,0) && !stopped)
+            else if (NativeJS.eq(loop,0) && !stopped)
                 removeTween(this);
 
             return;
@@ -338,16 +339,16 @@ class Tween
                 executeAction(act, 0);
 
                 // Внешняя отмена:
-                if (stopped || Utils.noeq(age,upd))
+                if (stopped || NativeJS.neq(age,upd))
                     return;
 
                 // Достигнуто начало списка:
-                if (Utils.eq(--ai,-1)) {
+                if (NativeJS.eq(--ai,-1)) {
                     if (bounce) {
                         reversed = !reversed;
                         time *= -1;
                     }
-                    if (Utils.eq(loop,0)) {
+                    if (NativeJS.eq(loop,0)) {
                         ai ++;
                         removeTween(this);
                         return;
@@ -357,12 +358,12 @@ class Tween
                     ai ++;
                 }
                 else {
-                    ap = Utils.eq(a[ai].duration,0)?1:a[ai].duration;
+                    ap = NativeJS.eq(a[ai].duration,0)?1:a[ai].duration;
                 }
             }
             else if (p >= act.duration && time > 0) {
                 // Задача выполнена: (Норма)
-                if (Utils.eq(act.duration, 0)) {
+                if (NativeJS.eq(act.duration, 0)) {
                     ap = 1;
                 }
                 else {
@@ -372,12 +373,12 @@ class Tween
                 executeAction(act, 1);
 
                 // Внешняя отмена:
-                if (stopped || Utils.noeq(age,upd))
+                if (stopped || NativeJS.neq(age,upd))
                     return;
 
                 // Достигнут конец списка:
-                if (Utils.eq(++ai,len)) {
-                    if (Utils.eq(loop,0)) {
+                if (NativeJS.eq(++ai,len)) {
+                    if (NativeJS.eq(loop,0)) {
                         if (bounce) {
                             reversed = !reversed;
                             time *= -1;
@@ -405,7 +406,7 @@ class Tween
             else {
                 // Задача выполняется:
                 ap = p;
-                executeAction(act, Utils.eq(act.duration,0)?0:(p/act.duration));
+                executeAction(act, NativeJS.eq(act.duration,0)?0:(p/act.duration));
                 return;
             }
         }
@@ -417,17 +418,17 @@ class Tween
     }
 
     private function executeAction(action:Action, progress:Float):Void {
-        if (Utils.eq(action.type, ActionType.EASE)) {
+        if (NativeJS.eq(action.type, ActionType.EASE)) {
             var prop:Dynamic = null;
             Syntax.code('for ({0} in {1}) {', prop, action.props); // for in
                 var v1:Dynamic = action.cache[prop]; // Исходное значение
                 var v2:Dynamic = action.props[prop]; // Целевое значение
 
                 // Число:
-                if (Utils.isNumber(v2)) {
-                    if (Utils.isUnd(v1)) {
-                        v1 = Utils.parseFloat(getTargetProperty(prop)); // Запоминаем исходное значение
-                        if (!Utils.isFinite(v1))
+                if (NativeJS.isNum(v2)) {
+                    if (NativeJS.isUnd(v1)) {
+                        v1 = NativeJS.parseFloat(getTargetProperty(prop)); // Запоминаем исходное значение
+                        if (!NativeJS.isFin(v1))
                             v1 = 0;
                         action.cache[prop] = v1;
                     }
@@ -437,19 +438,19 @@ class Tween
 
                 // Попытка разбора в число:
                 if (opt != null && opt.parse) {
-                    var v2p:Dynamic = Utils.parseFloat(v2);
-                    if (Utils.isFinite(v2p)) {
+                    var v2p:Dynamic = NativeJS.parseFloat(v2);
+                    if (NativeJS.isFin(v2p)) {
 
                         // Парсинг в число удался:
-                        if (Utils.isUnd(v1)) {
-                            v1 = Utils.parseFloat(getTargetProperty(prop)); // Запоминаем исходное значение
-                            if (!Utils.isFinite(v1))
+                        if (NativeJS.isUnd(v1)) {
+                            v1 = NativeJS.parseFloat(getTargetProperty(prop)); // Запоминаем исходное значение
+                            if (!NativeJS.isFin(v1))
                                 v1 = 0;
                             action.cache[prop] = v1;
                         }
 
-                        if (Utils.isString(v2))
-                            v2p = Utils.str(v1+action.ease(progress)*(v2p-v1));
+                        if (NativeJS.isStr(v2))
+                            v2p = NativeJS.str(v1+action.ease(progress)*(v2p-v1));
                         else
                             v2p = v1+action.ease(progress)*(v2p-v1);
 
@@ -459,18 +460,18 @@ class Tween
                 }
 
                 // Все остальные типы данных:
-                if (Utils.isUnd(v1)) {
+                if (NativeJS.isUnd(v1)) {
                     v1 = getTargetProperty(prop); // Запоминаем исходное значение
-                    if (Utils.isUnd(v1))
+                    if (NativeJS.isUnd(v1))
                         v1 = null;
                     action.cache[prop] = v1;
                 }
-                setTargetPropert(prop, Utils.eq(progress,1)?v2:v1);
+                setTargetPropert(prop, NativeJS.eq(progress,1)?v2:v1);
             Syntax.code('}'); // for end
             return;
         }
-        if (Utils.eq(action.type, ActionType.CALL)) {
-            if (Utils.eq(progress,1) && action.callback != null)
+        if (NativeJS.eq(action.type, ActionType.CALL)) {
+            if (NativeJS.eq(progress,1) && action.callback != null)
                 Syntax.code('{0}.apply(null, {1})', action.callback, action.args);
             return;
         }
@@ -480,7 +481,7 @@ class Tween
         if (prop == null)
             return null;
 
-        if (opt != null && opt.multilevel && Utils.isString(prop)) {
+        if (opt != null && opt.multilevel && NativeJS.isStr(prop)) {
             var arr:Array<String> = prop.split(".");
             var i = 0;
             var t = target;
@@ -505,7 +506,7 @@ class Tween
         }
 
         var t = target;
-        if (opt.multilevel && Utils.isString(prop)) {
+        if (opt.multilevel && NativeJS.isStr(prop)) {
             var arr:Array<String> = prop.split(".");
             var i = 0;
             while (i < arr.length-1) {
@@ -524,7 +525,7 @@ class Tween
     }
 
     private function addAction(action:Action):Tween {
-        if (Utils.eq(ai, -1)) {
+        if (NativeJS.eq(ai, -1)) {
             a[0] = action;
             ai = 0;
             ap = 0;
@@ -545,7 +546,7 @@ class Tween
      */
     @:keep
     public function toString():String {
-        return "[Tween target=" + Utils.str(target) + "]";
+        return "[Tween target=" + NativeJS.str(target) + "]";
     }
 
 
@@ -570,7 +571,7 @@ class Tween
      * @return Этот экземпляр твина для удобного построения цепочки.
      */
     public function to(params:Dynamic, duration:Float = 0, ease:EaseFunction = null):Tween {
-        if (!Utils.isNumber(duration) || !Utils.isFinite(duration) || duration < 0)
+        if (!NativeJS.isNum(duration) || !NativeJS.isFin(duration) || duration < 0)
             return addAction({ type:ActionType.EASE, duration:0, props:params, ease:ease==null?Ease.linear:ease, cache:{} });
 
         return addAction({ type:ActionType.EASE, duration:duration, props:params, ease:ease==null?Ease.linear:ease, cache:{} });
@@ -582,7 +583,7 @@ class Tween
      * @return Этот экземпляр твина для удобного построения цепочки.
      */
     public function wait(duration:Float):Tween {
-        if (!Utils.isNumber(duration) || !Utils.isFinite(duration) || duration < 0)
+        if (!NativeJS.isNum(duration) || !NativeJS.isFin(duration) || duration < 0)
             return addAction({ type:ActionType.WAIT, duration:0 });
 
         return addAction({ type:ActionType.WAIT, duration:duration });
@@ -627,8 +628,8 @@ class Tween
         // мы гарантируем обновление твина в следующем вызове step().
         tween.stp = steps;
 
-        if (Utils.eq(intervalID, -1) && interval > 0) {
-            stamp = Utils.stamp();
+        if (NativeJS.eq(intervalID, -1) && interval > 0) {
+            stamp = NativeJS.now();
             intervalID = Browser.window.setInterval(onInterval, interval);
         }
     }
@@ -639,7 +640,7 @@ class Tween
     }
 
     static private function onInterval():Void {
-        var now = Utils.stamp();
+        var now = NativeJS.now();
         var dt = now - stamp;
         stamp = now;
 
@@ -743,7 +744,7 @@ class Tween
 
             arr[len].si = -1;
         }
-        Utils.delete(all[target.tweenTargetID]);
+        NativeJS.delete(all, target.tweenTargetID);
     }
 
     /**
@@ -793,8 +794,8 @@ class Tween
                     continue;
 
                 // Пропуск новых твинов, добавленных в этом цикле обновления: (Обновятся на следующем)
-                if (Utils.eq(tween.stp, steps)) {
-                    if (Utils.eq(tween.si, j)) {
+                if (NativeJS.eq(tween.stp, steps)) {
+                    if (NativeJS.eq(tween.si, j)) {
                         j ++;
                     }
                     else {
@@ -811,7 +812,7 @@ class Tween
 
                 // Твин ещё не закончился:
                 finish = false;
-                if (Utils.eq(tween.si, j)) {
+                if (NativeJS.eq(tween.si, j)) {
                     j ++;
                 }
                 else {
@@ -819,9 +820,9 @@ class Tween
                     arr[j++] = tween;
                 }
             }
-            if (Utils.eq(j, 0))
-                Utils.delete(all[targetID]);
-            else if (Utils.noeq(j, i))
+            if (NativeJS.eq(j, 0))
+                NativeJS.delete(all, targetID);
+            else if (NativeJS.neq(j, i))
                 arr.resize(j);
         Syntax.code('}'); // for end
 
