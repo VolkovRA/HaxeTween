@@ -629,8 +629,31 @@ class Tween
     static private var all:Dynamic = {}; // targetID->[Tween, Tween, null, Tween, ...]
     static private var targetID:Int = 0;
     static private var stamp:Float = 0;
-    static private var intervalID:Int = -1;
     static private var steps:Int = 0;
+    static private var request:Bool = false;
+
+    /**
+     * Ручной вызов обновления твинов.  
+     * Это значение полезно, если вы используете
+     * собственный heartbeat и хотите самостоятельно
+     * вызывать обновление всех твинов.
+     * 
+     * По умолчанию: `false` *(Ручной режим выключен)*
+     */
+    static public var handRedrawMode(default, set):Bool = false;
+    static function set_handRedrawMode(value:Bool):Bool {
+        if (handRedrawMode == value)
+            return value;
+
+        handRedrawMode = value;
+        if (!value && !request) {
+            request = true;
+            stamp = NativeJS.now();
+            Browser.window.requestAnimationFrame(onUpdate);
+        }
+
+        return value;
+    }
 
     static private function addTween(tween:Tween):Void {
         var arr:Array<Tween> = all[tween.target.tweenTargetID];
@@ -649,9 +672,10 @@ class Tween
         // мы гарантируем обновление твина в следующем вызове step().
         tween.stp = steps;
 
-        if (NativeJS.eq(intervalID, -1) && interval > 0) {
+        if (!request && !handRedrawMode) {
+            request = true;
             stamp = NativeJS.now();
-            intervalID = Browser.window.setInterval(onInterval, interval);
+            Browser.window.requestAnimationFrame(onUpdate);
         }
     }
 
@@ -660,50 +684,16 @@ class Tween
         tween.si = -1;
     }
 
-    static private function onInterval():Void {
+    static private function onUpdate(v:Dynamic):Void {
         var now = NativeJS.now();
         var dt = now - stamp;
         stamp = now;
+        request = false;
 
-        if (step(dt)) {
-            Browser.window.clearInterval(intervalID);
-            intervalID = -1;
+        if (!step(dt) && !handRedrawMode) {
+            Browser.window.requestAnimationFrame(onUpdate);
+            request = true;
         }
-    }
-
-    /**
-     * Интервал обновления твинов. *(mc)*  
-     * Это значение используется для автоматического вызова: `step()`
-     * Если задать: `0` или меньше, автоматическое обновление не
-     * будет использовано. В этом случае вы **должны** будете вызывать
-     * метод: `step()` самостоятельно. Это может быть полезно при
-     * использовании библиотек, использующих собственный heartbeat.
-     * 
-     * По умолчанию: `16` *(Примерно 60 раз в секунду)*
-     * 
-     * @see setInterval: https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/setInterval
-     */
-    static public var interval(default, set):Float = 16;
-    static function set_interval(value:Float):Float {
-        if (value == interval)
-            return value;
-
-        if (value > 0) {
-            if (intervalID != -1) {
-                Browser.window.clearInterval(intervalID);
-                intervalID = Browser.window.setInterval(onInterval, value);
-            }
-            interval = value;
-        }
-        else {
-            if (intervalID != -1) {
-                Browser.window.clearInterval(intervalID);
-                intervalID = -1;
-            }
-            interval = 0;
-        }
-
-        return value;
     }
 
     /**
