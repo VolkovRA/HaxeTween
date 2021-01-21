@@ -1,11 +1,13 @@
 {
-	"name": "tween",
-	"url": "https://github.com/VolkovRA/HaxeTween/blob/master/README.md",
-	"license": "MIT",
-	"tags": ["tween", "ease", "js"],
-	"description": "The Haxe tweens library to JS",
-	"version": "1.0.0",
-	"releasenote": "Stable",
-	"contributors": ["VolkovRA"],
-	"classPath": "lib"
+    "name": "tween",
+    "url": "https://github.com/VolkovRA/HaxeTween/blob/master/README.md",
+    "license": "MIT",
+    "tags": ["tween", "ease", "js", "web"],
+    "description": "Твиннер для web",
+    "version": "2.0.0",
+    "contributors": ["VolkovRA"],
+    "classPath": "lib",
+    "dependencies" : {
+        "tools": "git:https://github.com/VolkovRA/HaxeTools.git"
+    }
 }
