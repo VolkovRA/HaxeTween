@@ -558,15 +558,6 @@ class Tween
         return this;
     }
 
-    /**
-     * Получить строковое представление объекта.
-     * @return Строковое представление этого объекта.
-     */
-    @:keep
-    public function toString():String {
-        return "[Tween target=" + NativeJS.str(target) + "]";
-    }
-
 
 
     //////////////////
